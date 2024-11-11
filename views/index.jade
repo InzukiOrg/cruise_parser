@@ -1,0 +1,59 @@
+extends layout
+
+block content
+  h1 Парсер кораблей
+  button#start_parsing Начать парсинг 
+  button#stop_parsing Остановить
+  p#status(hidden)
+  p#page(hidden)
+  p#cruises(hidden)
+  p#offers(hidden)
+  div#items
+  script(src="https://cdn.socket.io/4.0.0/socket.io.min.js") 
+  script
+    window.onload = function() {
+
+      const socket = io("/parser");
+
+      const button = document.getElementById('start_parsing');
+      const stopButton = document.getElementById('stop_parsing');
+
+      socket.on("connect", () => {
+        console.log("Connected to server");
+      });
+
+      socket.emit("joinRoom", "parser");
+      
+      button.addEventListener('click', ()=>socket.emit('start_parsing',  'parser'));     
+      stopButton.addEventListener('click', ()=>socket.emit('stop_parsing',  'parser'));     
+
+      var created_offers = 0;
+      var created_cruises = 0;
+      socket.on("parser", (obj) => {
+        console.log(obj);
+        if(obj.status === 'started'){
+          let status = document.getElementById('status');
+          status.textContent = `Начало парсиинга: Всего круизов ${obj.count}, Страниц: ${obj.pages}`;
+          status.hidden = false;
+        }
+        if(obj.status === 'page_parsing'){
+          let page = document.getElementById('page');
+          page.textContent = `Идет парсинг ${obj.page} страницы`;
+          page.hidden = false;
+        }         
+        if(obj.status === 'created_cruise'){
+          let cruises = document.getElementById('cruises');
+          created_cruises+=1;
+          cruises.textContent = `Было спаршено ${created_cruises} круизов`;
+          cruises.hidden = false;
+        }
+        if(obj.status === 'created_offer'){
+          let offers = document.getElementById('offers');
+          created_offers+=1;
+          offers.textContent = `Было спаршено ${created_offers} цен`;
+          offers.hidden = false;
+        }
+      }); 
+    }
+
+
