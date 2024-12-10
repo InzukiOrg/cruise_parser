@@ -1,6 +1,6 @@
-const CruiseController = require("./controllers/CruiseController");
-const OfferController = require("./controllers/OfferController");
-const ParseUnitController = require("./controllers/ParseUnitController");
+const CruiseController = require("../controllers/CruiseController");
+const OfferController = require("../controllers/OfferController");
+const ParseUnitController = require("../controllers/ParseUnitController");
 
 vodohod = async (browser, socket, parseUnitID) => {
   const page = await browser.newPage();
@@ -100,7 +100,7 @@ vodohod = async (browser, socket, parseUnitID) => {
       break;
     }
   }
-  Parser.update(parseUnitID, { status: "stopped" });
+  ParseUnitController.update(parseUnitID, { status: "stopped" });
 };
 
 /**

@@ -1,10 +1,9 @@
 const { default: axios } = require("axios");
-const CruiseController = require("./Controllers/CruiseController");
-const OfferController = require("./Controllers/OfferController");
-const ParseUnitController = require("./controllers/ParseUnitController");
-const Parser = require("./classes/Parser");
-const ParseUnit = require("./models/ParseUnit");
-const StoreCruiseDTO = require("./dto/StoreCruiseDTO");
+const CruiseController = require("../controllers/CruiseController");
+const OfferController = require("../controllers/OfferController");
+const ParseUnitController = require("../controllers/ParseUnitController");
+const ParseUnit = require("../models/ParseUnit");
+const StoreCruiseDTO = require("../dto/StoreCruiseDTO");
 
 const URL =
   "https://www.infoflot.com/api/search/v1/cruises?freeOnly=1&futureCruises=1&tab=river&orderBy=startDate&limit=100";

@@ -1,11 +1,11 @@
 const puppeteer = require("puppeteer");
-const { vodohod } = require("../vodohod");
+const { vodohod } = require("../parsers/vodohod");
 const ParseUnitController = require("./ParseUnitController");
 const ParseUnit = require("../models/ParseUnit");
 const Cruise = require("../models/Cruise");
 const sequelize = require("../database/database");
 const { Sequelize } = require("sequelize");
-const { infoflot } = require("../infoflot");
+const { infoflot } = require("../parsers/infoflot");
 
 class AppController {
 
