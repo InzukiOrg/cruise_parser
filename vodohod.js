@@ -96,21 +96,21 @@ vodohod = async (browser, socket, parseUnitID) => {
       break;
     }
   }
+  Parser.update(parseUnitID, { status: "stopped" });
 };
-
 
 /**
  * Парсинг цен с детальной страницы
- * @param {Object} cruiseData 
- * @param {*} browser 
- * @param {*} socket 
- * @param {Number} parseUnitID 
+ * @param {Object} cruiseData
+ * @param {*} browser
+ * @param {*} socket
+ * @param {Number} parseUnitID
  */
 async function parseDetail(cruiseData, browser, socket, parseUnitID) {
   cruiseData["parse_unit_id"] = parseUnitID;
   let Cruise = await CruiseController.create(cruiseData, socket);
 
-  ParseUnitController.update(parseUnitID, { current_cruise: Cruise.id });
+  await ParseUnitController.update(parseUnitID, { current_cruise: Cruise.id });
 
   let URL = Cruise.url;
   let urlTablePrice =
@@ -118,38 +118,59 @@ async function parseDetail(cruiseData, browser, socket, parseUnitID) {
 
   let page = await browser.newPage();
 
+  let responseHandled = false;
   // Отслеживание ответов
   await page.on("response", async (response) => {
     const url = response.url();
     if (url == urlTablePrice && response.request().method() != "OPTIONS") {
       let responseBody = await response.json();
-      await responseBody.decks.forEach((deck) => {
-        dataForStoreOffer = { deck: deck.name, cruise_id: Cruise.id };
-        deck.room_classes.forEach((room_class) => {
-          dataForStoreOffer["room_class"] = room_class.name;
-          room_class.accommodations.forEach((accommodation) => {
-            dataForStoreOffer["accommodation"] = accommodation.name;
-            accommodation.price.forEach((price) => {
-              dataForStoreOffer.price = price.value;
-              dataForStoreOffer.discount_price = price.discounted_value;
-              responseBody.meta_tariffs.forEach((tariff) => {
-                if (tariff.id == price.meta_tariff_id)
-                  dataForStoreOffer.tarrif = tariff.name;
+      if (responseBody !== null && Array.isArray(responseBody.decks) && responseBody.decks.length > 0) {
+        responseBody.decks.forEach((deck) => {
+          dataForStoreOffer = { deck: deck.name, cruise_id: Cruise.id };
+          deck.room_classes.forEach((room_class) => {
+            dataForStoreOffer["room_class"] = room_class.name;
+            room_class.accommodations.forEach((accommodation) => {
+              dataForStoreOffer["accommodation"] = accommodation.name;
+              accommodation.price.forEach((price) => {
+                dataForStoreOffer.price = price.value;
+                dataForStoreOffer.discount_price = price.discounted_value;
+                responseBody.meta_tariffs.forEach((tariff) => {
+                  if (tariff.id == price.meta_tariff_id)
+                    dataForStoreOffer.tarrif = tariff.name;
+                });
+                dataForStoreOffer["parse_unit_id"] = parseUnitID;
+                OfferController.create(dataForStoreOffer, socket);
               });
-              dataForStoreOffer["parse_unit_id"] = parseUnitID;
-              OfferController.create(dataForStoreOffer, socket);
             });
           });
         });
-      });
-      await page.close();
+      }
+      responseHandled = true; // Все ответы обработаны
     }
   });
 
   try {
     await page.goto(URL);
+    const jsonData = await page.evaluate(() => {
+      const scriptTag = document.querySelector(
+        'script[type="application/ld+json"]'
+      );
+      return scriptTag ? JSON.parse(scriptTag.innerText) : null;
+    });
+    setTimeout(async () => {
+      try {
+        await page.close();
+      } catch (error) {}
+    }, 30000);
+    CruiseController.update(Cruise.id, {
+      date_start: jsonData.startDate,
+      end_date: jsonData.endDate,
+    });
   } catch (error) {
     // console.log("Ошибка загрузки детальной страницы", error);
+  }
+  if (responseHandled) {
+    page.close();
   }
 }
 async function isParsedStop(parseUnitID) {

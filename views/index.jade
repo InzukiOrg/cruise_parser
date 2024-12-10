@@ -30,7 +30,6 @@ block content
       var created_offers = 0;
       var created_cruises = 0;
       socket.on("parser", (obj) => {
-        console.log(obj);
         if(obj.status === 'started'){
           let status = document.getElementById('status');
           status.textContent = `Начало парсиинга: Всего круизов ${obj.count}, Страниц: ${obj.pages}`;

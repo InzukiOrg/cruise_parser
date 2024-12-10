@@ -42,9 +42,9 @@ app.use(function (err, req, res, next) {
 //sql
 syncDatabase();
 // Функция для синхронизации базы данных
-function syncDatabase() {
+async function syncDatabase() {
   try {
-    sequelize.sync(); // Создаст таблицы, если их нет
+    await sequelize.sync(); // Создаст таблицы, если их нет
     console.log("Таблицы синхронизированы с базой данных.");
   } catch (error) {
     throw ("Ошибка при синхронизации базы данных:", error);
