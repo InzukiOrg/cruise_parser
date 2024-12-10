@@ -3,10 +3,11 @@
 /**
  * Module dependencies.
  */
-
+require('dotenv').config();
 var debug = require("debug")("cruisesparser:server");
 var http = require("http");
 const path = require("path");
+
 var app = require(path.join(__dirname, process.env.NODE_ENV === "production" ? "../dist/app" : "../src/app"));
 
 /**
