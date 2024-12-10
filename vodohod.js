@@ -23,9 +23,10 @@ vodohod = async (browser, socket, parseUnitID) => {
   let pages = Math.ceil(parseInt(count) / 10);
   console.log("Количество страниц", pages);
 
-  socket
-    .to("parser")
-    .emit("parser", { status: "started", count: count, pages: pages });
+  if (socket != null)
+    socket
+      .to("parser")
+      .emit("parser", { status: "started", count: count, pages: pages });
 
   for (let index = 1; index <= pages; index++) {
     if (await isParsedStop(parseUnitID)) {
@@ -38,7 +39,10 @@ vodohod = async (browser, socket, parseUnitID) => {
 
     ParseUnitController.update(parseUnitID, { current_page: index });
 
-    socket.to("parser").emit("parser", { status: "page_parsing", page: index });
+    if (socket != null)
+      socket
+        .to("parser")
+        .emit("parser", { status: "page_parsing", page: index });
 
     let parsedCruisesOnPage = await page.evaluate(() => {
       let elements = document.querySelectorAll("[data-load-cruise-info]");
@@ -124,7 +128,11 @@ async function parseDetail(cruiseData, browser, socket, parseUnitID) {
     const url = response.url();
     if (url == urlTablePrice && response.request().method() != "OPTIONS") {
       let responseBody = await response.json();
-      if (responseBody !== null && Array.isArray(responseBody.decks) && responseBody.decks.length > 0) {
+      if (
+        responseBody !== null &&
+        Array.isArray(responseBody.decks) &&
+        responseBody.decks.length > 0
+      ) {
         responseBody.decks.forEach((deck) => {
           dataForStoreOffer = { deck: deck.name, cruise_id: Cruise.id };
           deck.room_classes.forEach((room_class) => {

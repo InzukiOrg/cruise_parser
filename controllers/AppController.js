@@ -16,7 +16,7 @@ class AppController {
   // async startParsing(socket) {
   //   await infoflot()
   // }
-  async startParsing(socket) {
+  async startParsing(socket = null) {
     let parseUnit = await ParseUnitController.create({ status: "started" });
 
     // Запуск браузера
