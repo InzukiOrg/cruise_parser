@@ -1,5 +1,5 @@
-const CruiseController = require("./Controllers/CruiseController");
-const OfferController = require("./Controllers/OfferController");
+const CruiseController = require("./controllers/CruiseController");
+const OfferController = require("./controllers/OfferController");
 const ParseUnitController = require("./controllers/ParseUnitController");
 
 vodohod = async (browser, socket, parseUnitID) => {
