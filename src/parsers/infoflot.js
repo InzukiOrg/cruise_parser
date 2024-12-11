@@ -28,11 +28,37 @@ async function createCruise(cruise = StoreCruiseDTO, parseUnitID) {
   storeCruiseDTO.ext_id = cruise.id;
   storeCruiseDTO.price = cruise.price.gte;
   storeCruiseDTO.vessel = cruise.ship.name;
-  // StoreCruiseDTO.url = cruise.;
+  StoreCruiseDTO.url = "https://www.infoflot.com/cruise/" + cruise.id;
   storeCruiseDTO.parse_unit_id = parseUnitID;
   storeCruiseDTO.date_start = cruise.date.gte;
   storeCruiseDTO.end_date = cruise.date.lte;
-  await CruiseController.create(storeCruiseDTO);
+  let cruiseDB = await CruiseController.create(storeCruiseDTO);
+
+  ParseUnitController.update(parseUnitID, { current_cruise: cruiseDB.id });
+  createOffers(cruise, cruiseDB.id, parseUnitID);
+}
+
+async function createCruises(cruises, parseUnitID) {
+  for (let index = 0; index < cruises.length; index++) {
+    await createCruise(cruises[index], parseUnitID);
+  }
+}
+
+async function createOffers(cruise, cruiseID, parseUnitID) {
+  cruise.cabins.types.forEach((type) => {
+    dataForStoreOffer = { deck: type.name, cruise_id: cruiseID };
+    type.items.forEach((cabin) => {
+      dataForStoreOffer.room_class = cabin.title;
+      Object.values(cabin.prices).forEach((price) => {
+        if (price.iso == "rub") {
+          dataForStoreOffer.price = price.default;
+          dataForStoreOffer.discount_price = price.main;
+        }
+      });
+      dataForStoreOffer.parse_unit_id = parseUnitID;
+      OfferController.create(dataForStoreOffer);
+    });
+  });
 }
 
 infoflot = async () => {
@@ -45,18 +71,19 @@ infoflot = async () => {
     cruises = data.results;
   });
 
-  for (let index = 0; index < cruises.length; index++) {
-    await createCruise(cruises[index], parseUnitID);
-  }
+  createCruises(cruises, parseUnitID);
+
   let offset = 100;
-  for (let index = 0; index < Math.floor(count_ / 100); index++) {
+  for (let index = 0; index < Math.floor((count_ - 100) / 100); index++) {
     await axios.get(URL + `&offset=${offset}`).then(({ data }) => {
-      console.log("Данные получены");
-      setParseCruiseCount(data.count);
       cruises = data.results;
+      console.log(`Парсинг ${index+1} страницы`)
+      createCruises(cruises, parseUnitID);
+      ParseUnitController.update(parseUnitID, { current_page: index });
     });
     offset += 100;
   }
+  ParseUnitController.update(parseUnitID, { status: "stopped" , date_end: Date()});
 };
 
 module.exports = {

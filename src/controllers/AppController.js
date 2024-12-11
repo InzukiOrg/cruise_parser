@@ -13,10 +13,10 @@ class AppController {
   home(req, res) {
     res.render("index");
   }
-  // async startParsing(socket) {
-  //   await infoflot()
-  // }
-  async startParsing(socket = null) {
+  async startParsingInfoflot(socket) {
+    await infoflot()
+  }
+  async startParsingVodohod(socket = null) {
     let parseUnit = await ParseUnitController.create({ status: "started" });
 
     // Запуск браузера

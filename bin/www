@@ -8,7 +8,7 @@ var debug = require("debug")("cruisesparser:server");
 var http = require("http");
 const path = require("path");
 
-var app = require(path.join(__dirname, process.env.NODE_ENV === "production" ? "../dist/app" : "../src/app"));
+var app = require(path.join(__dirname, process.env.NODE_ENV === "production" ? "../src/app" : "../src/app"));
 
 /**
  * Get port from environment and store in Express.
@@ -26,7 +26,7 @@ var server = http.createServer(app);
 /**
  * Socket.IO
  */
-const io = require(path.join(__dirname, process.env.NODE_ENV === "production" ? "../dist/socket" : "../src/socket"))(server);
+const io = require(path.join(__dirname, process.env.NODE_ENV === "production" ? "../src/socket" : "../src/socket"))(server);
 
 /**
  * Listen on provided port, on all network interfaces.
