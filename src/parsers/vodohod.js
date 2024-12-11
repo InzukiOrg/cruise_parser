@@ -71,7 +71,7 @@ vodohod = async (browser, socket, parseUnitID) => {
           vessel:
             data["category"] != ""
               ? data["category"]
-              : element.querySelector("[data-cruise-ship-class]").innerText,
+              : element.querySelector("[data-cruise-ship-name]").innerText,
           url:
             "https://vodohod.com/cruises/" +
             element.querySelector(".p__title--d").getAttribute("href"),
