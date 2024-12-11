@@ -6,6 +6,7 @@ const Cruise = require("../models/Cruise");
 const sequelize = require("../database/database");
 const { Sequelize } = require("sequelize");
 const { infoflot } = require("../parsers/infoflot");
+const { startParser, stopParser } = require("./ParserController");
 
 class AppController {
 
@@ -14,10 +15,11 @@ class AppController {
     res.render("index");
   }
   async startParsingInfoflot(socket) {
+    await startParser('infoflot');
     await infoflot()
   }
   async startParsingVodohod(socket = null) {
-    let parseUnit = await ParseUnitController.create({ status: "started" });
+    await startParser('vodohodz`');
 
     // Запуск браузера
     const browser = await puppeteer.launch({
@@ -38,8 +40,7 @@ class AppController {
     const lastParseUnit = await ParseUnit.findOne({
       order: [["id", "DESC"]], // Сортировка по убыванию ID
     });
-    lastParseUnit.status = "stopped";
-    await lastParseUnit.save();
+    stopParser(lastParseUnit.id);
   }
 
 

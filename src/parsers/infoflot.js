@@ -2,20 +2,47 @@ const { default: axios } = require("axios");
 const CruiseController = require("../controllers/CruiseController");
 const OfferController = require("../controllers/OfferController");
 const ParseUnitController = require("../controllers/ParseUnitController");
-const ParseUnit = require("../models/ParseUnit");
 const StoreCruiseDTO = require("../dto/StoreCruiseDTO");
+const { startParser, stopParser, setParsedCruiseCount } = require("../controllers/ParserController");
 
 const URL =
   "https://www.infoflot.com/api/search/v1/cruises?freeOnly=1&futureCruises=1&tab=river&orderBy=startDate&limit=100";
+const OFFER_URL = "https://www.infoflot.com/api/content/v1/cruises/";
 
 let parseUnitID = 0;
+let parsedCruises = 0;
 
-async function startParse() {
-  parseUnit = await ParseUnitController.create({
-    status: "started",
+/**
+ * Парсер для портала infoflot
+ */
+infoflot = async () => {
+  parseUnitID = await startParser("infoflot");
+  let cruises = [];
+  console.log("Получение данных с сайта", URL);
+  await axios.get(URL).then(({ data }) => {
+    console.log("Данные получены");
+    setParseCruiseCount(data.count);
+    cruises = data.results;
   });
-  return parseUnit.id;
-}
+
+  createCruises(cruises, parseUnitID);
+
+  let offset = 100;
+  for (let index = 0; index < Math.floor((count_ - 100) / 100); index++) {
+    await axios.get(URL + `&offset=${offset}`).then(({ data }) => {
+      cruises = data.results;
+      console.log(`Парсинг ${index + 1} страницы`);
+      ParseUnitController.update(parseUnitID, { current_page: index + 1 });
+    });
+
+    await createCruises(cruises, parseUnitID);
+    parsedCruises += 100;
+    setParsedCruiseCount(parseUnitID, parsedCruises);
+    offset += 100;
+  }
+  stopParser(parseUnitID);
+};
+
 let count_ = 0;
 function setParseCruiseCount(count) {
   count_ = count;
@@ -35,7 +62,7 @@ async function createCruise(cruise = StoreCruiseDTO, parseUnitID) {
   let cruiseDB = await CruiseController.create(storeCruiseDTO);
 
   ParseUnitController.update(parseUnitID, { current_cruise: cruiseDB.id });
-  createOffers(cruise, cruiseDB.id, parseUnitID);
+  await createOffers(cruise, cruiseDB.id, parseUnitID);
 }
 
 async function createCruises(cruises, parseUnitID) {
@@ -45,46 +72,34 @@ async function createCruises(cruises, parseUnitID) {
 }
 
 async function createOffers(cruise, cruiseID, parseUnitID) {
-  cruise.cabins.types.forEach((type) => {
-    dataForStoreOffer = { deck: type.name, cruise_id: cruiseID };
-    type.items.forEach((cabin) => {
-      dataForStoreOffer.room_class = cabin.title;
-      Object.values(cabin.prices).forEach((price) => {
-        if (price.iso == "rub") {
-          dataForStoreOffer.price = price.default;
-          dataForStoreOffer.discount_price = price.main;
-        }
+  await axios
+    .get(`${OFFER_URL}${cruise.id}/cabins?freeOnly=1`)
+    .then(({ data }) => {
+      data.cabins.forEach((type) => {
+        dataForStoreOffer = { parse_unit_id: parseUnitID, cruise_id: cruiseID };
+        type.items.forEach((cabin) => {
+          dataForStoreOffer.room_class = cabin.title;
+          dataForStoreOffer.deck = cabin.cabins[0].deck.name;
+          if (cabin.prices.default && cabin.prices.main) {
+            dataForStoreOffer.price = cabin.prices.default;
+            dataForStoreOffer.discount_price = cabin.prices.main;
+            OfferController.create(dataForStoreOffer);
+          } else {
+            axios
+              .get(`${OFFER_URL}${cruise.id}/cabins/${cabin.cabins[0].id}`)
+              .then(({ data }) => {
+                dataForStoreOffer.price = data.price.default;
+                dataForStoreOffer.discount_price = data.price.total;
+                OfferController.create(dataForStoreOffer);
+              });
+          }
+        });
       });
-      dataForStoreOffer.parse_unit_id = parseUnitID;
-      OfferController.create(dataForStoreOffer);
+    })
+    .catch((err) => {
+      console.log(`${OFFER_URL}${cruise.id}/cabins?freeOnly=1`);
     });
-  });
 }
-
-infoflot = async () => {
-  parseUnitID = await startParse();
-  let cruises = [];
-  console.log("Получение данных с сайта", URL);
-  await axios.get(URL).then(({ data }) => {
-    console.log("Данные получены");
-    setParseCruiseCount(data.count);
-    cruises = data.results;
-  });
-
-  createCruises(cruises, parseUnitID);
-
-  let offset = 100;
-  for (let index = 0; index < Math.floor((count_ - 100) / 100); index++) {
-    await axios.get(URL + `&offset=${offset}`).then(({ data }) => {
-      cruises = data.results;
-      console.log(`Парсинг ${index+1} страницы`)
-      createCruises(cruises, parseUnitID);
-      ParseUnitController.update(parseUnitID, { current_page: index });
-    });
-    offset += 100;
-  }
-  ParseUnitController.update(parseUnitID, { status: "stopped" , date_end: Date()});
-};
 
 module.exports = {
   infoflot,

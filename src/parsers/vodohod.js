@@ -100,7 +100,7 @@ vodohod = async (browser, socket, parseUnitID) => {
       break;
     }
   }
-  ParseUnitController.update(parseUnitID, { status: "stopped" });
+  stopParser(parseUnitID);
 };
 
 /**

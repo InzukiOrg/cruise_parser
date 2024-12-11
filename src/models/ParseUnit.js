@@ -8,6 +8,7 @@ const ParseUnit = sequelize.define('ParseUnit', {
     parsed_cruise_count: {  type: DataTypes.INTEGER },
     current_page: { type: DataTypes.INTEGER, defaultValue: 0 },
     current_cruise: {  type: DataTypes.INTEGER, defaultValue: 0 },
+    site:  {  type: DataTypes.STRING },
     date_end: {  type: DataTypes.DATE, allowNull: true },
 });
 
