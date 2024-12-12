@@ -19,7 +19,7 @@ class AppController {
     await infoflot()
   }
   async startParsingVodohod(socket = null) {
-    await startParser('vodohodz`');
+    const parseUnitID = await startParser('vodohod');
 
     // Запуск браузера
     const browser = await puppeteer.launch({
@@ -27,10 +27,10 @@ class AppController {
       args: ["--disable-features=site-per-process"],
     });
     try {
-      await vodohod(browser, socket, parseUnit.id);
+      await vodohod(browser, socket, parseUnitID);
     } catch (error) {
       console.log(error);
-      ParseUnitController.update(parseUnit.id, {
+      ParseUnitController.update(parseUnitID, {
         status: "error",
         date_end: Date(),
       });

@@ -7,6 +7,9 @@ var logger = require("morgan");
 var indexRouter = require("./routes/index");
 var apiRouter = require("./routes/api.js");
 const sequelize = require("./database/database.js");
+const ParseUnit = require("./models/ParseUnit.js");
+const Cruise = require("./models/Cruise.js");
+const Offer = require("./models/Offer.js");
 
 var app = express();
 
@@ -44,7 +47,14 @@ syncDatabase();
 // Функция для синхронизации базы данных
 async function syncDatabase() {
   try {
+    ParseUnit.hasMany(Cruise, { foreignKey: "parse_unit_id", as: "cruises" });
+    ParseUnit.hasMany(Offer, { foreignKey: "parse_unit_id" });
+    Cruise.hasMany(Offer, { foreignKey: "cruise_id", as: "offers" });
+    Offer.belongsTo(Cruise, { foreignKey: "cruise_id" });
+    Cruise.belongsTo(ParseUnit, { foreignKey: "parse_unit_id" });
+    Offer.belongsTo(ParseUnit, { foreignKey: "parse_unit_id" });
     await sequelize.sync(); // Создаст таблицы, если их нет
+
     console.log("Таблицы синхронизированы с базой данных.");
   } catch (error) {
     throw ("Ошибка при синхронизации базы данных:", error);
